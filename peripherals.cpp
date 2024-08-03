@@ -13,7 +13,7 @@ namespace Peripherals {
 
     enc1.begin(A0,A1,A2);
     enc2.begin(A3,A4,A5);
-    
+
     powerSwitch.interval(5);
     powerSwitch.attach(8, INPUT);
     powerSwitch.setPressedState(LOW);

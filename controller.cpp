@@ -2,6 +2,7 @@
 #include "peripherals.h"
 #include "display_util.h"
 #include <UniversalTimer.h>
+#include <EEPROM.h>
 
 using namespace Peripherals;
 
@@ -39,6 +40,12 @@ namespace Controller {
   static float lastSpeedMKSDisp = 0.0;
   static size_t lastSpeedMKSStringSz = 0;
 
+  static float lastPulsesPerRoundDisp = 0.0;
+  static size_t lastPulsesPerRoundStringSz = 0;
+
+  static float lastCircumferenceDisp = 0.0;
+  static size_t lastCircumferenceStringSz = 0;
+
   // The exported pulse counters
   uint32_t pulsesAbs = 0, pulsesRel = 0;
   float speed = 0.0f;
@@ -55,6 +62,131 @@ namespace Controller {
     lcd.print("by Autojuwel");
     lcd.setCursor(0,3);
     lcd.print("V1.0");
+
+    uint16_t u16setting;
+    uint32_t u32setting;
+
+    EEPROM.get(8, u16setting);
+    if( u16setting != 0xFFFF ) PULSES_PER_ROUND = u16setting;
+
+    EEPROM.get(10, u16setting);
+    if( u16setting != 0xFFFF ) MILLIMETERS_PER_ROUND = u16setting;
+
+    EEPROM.get(0, u32setting);
+    if( u32setting != 0xFFFFFFFF ) pulsesAbs = u32setting;
+
+    EEPROM.get(4, u32setting);
+    if( u32setting != 0xFFFFFFFF ) pulsesRel = u32setting;
+  }
+
+  enum command loop_bootscreen() {
+    if( enc1.buttonChanged() ) {
+      Serial.print("button1 state: ");
+      Serial.println(enc1.getButton() == LOW ? "pressed" : "released");
+
+      if( enc1.getButton() == LOW ) {
+        return GOTO_SETUP;
+      }
+    }
+
+    return NONE;
+  }
+
+  void setup_setupscreen() {
+    Serial.println("Controller::setup_setupscreen()");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Pulse/Radumdrehung");
+    displayFloat(lcd,(float)PULSES_PER_ROUND, 0, 3, 1, lastPulsesPerRoundDisp, lastPulsesPerRoundStringSz, "", false);
+    lcd.setCursor(0,2);
+    lcd.print("Radumfang");
+    displayFloat(lcd,(float)MILLIMETERS_PER_ROUND, 0, 3, 3, lastCircumferenceDisp, lastCircumferenceStringSz, " mm", false);
+  }
+
+  void exit_setupscreen() {
+    EEPROM.put(8, PULSES_PER_ROUND);
+    EEPROM.put(10, MILLIMETERS_PER_ROUND);
+  }
+
+
+  void setup_setupPulsesPerRound() {
+    lcd.setCursor(1,1);
+    lcd.print('*');
+
+    lcd.setCursor(1,3);
+    lcd.print(' ');
+
+    enc1.setValue(PULSES_PER_ROUND);
+  }
+
+  enum command loop_setupPulsesPerRound() {
+
+      if( enc1.buttonChanged() ) {
+        if( enc1.getButton() == LOW ) {
+          return ACTIVATE_CIRCUMFERENCE;
+        }
+      }
+
+      if (enc1.valueChanged())             // do we have a new encoder value?
+      {
+        int newval = enc1.getValue();
+        Serial.print("enc1 new value: ");
+        Serial.println(newval);
+    
+        PULSES_PER_ROUND = newval;
+        displayFloat(lcd,(float)PULSES_PER_ROUND, 0, 3, 1, lastPulsesPerRoundDisp, lastPulsesPerRoundStringSz, "", false);
+      }
+
+      if( enc2.buttonChanged() ) {
+        Serial.print("button2 state: ");
+        Serial.println(enc2.getButton() == LOW ? "pressed" : "released");
+
+        if( enc2.getButton() == LOW ) {
+          return LEAVE_SETUP;
+        }
+      }
+
+      return NONE;
+  }
+
+  void setup_setupCircumference() {
+    lcd.setCursor(1,3);
+    lcd.print('*');
+
+    lcd.setCursor(1,1);
+    lcd.print(' ');
+
+    enc1.setValue(MILLIMETERS_PER_ROUND);
+  }
+
+  enum command loop_setupCircumference() {
+
+      if( enc1.buttonChanged() ) {
+        if( enc1.getButton() == LOW ) {
+          return ACTIVATE_PULSESPERROUND;
+        }
+      }
+
+      if (enc1.valueChanged())             // do we have a new encoder value?
+      {
+        int newval = enc1.getValue();
+        Serial.print("enc1 new value: ");
+        Serial.println(newval);
+    
+        MILLIMETERS_PER_ROUND = newval;
+        displayFloat(lcd,(float)MILLIMETERS_PER_ROUND, 0, 3, 3, lastCircumferenceDisp, lastCircumferenceStringSz, " mm", false);
+      }
+
+      if( enc2.buttonChanged() ) {
+        Serial.print("button2 state: ");
+        Serial.println(enc2.getButton() == LOW ? "pressed" : "released");
+
+        if( enc2.getButton() == LOW ) {
+          return LEAVE_SETUP;
+        }
+      }
+
+      return NONE;
   }
 
   void setup_mainmenu() {
@@ -83,6 +215,13 @@ namespace Controller {
     hasEvent |= HandleEnc2();
 
     CalculateSpeed();
+
+    if( powerSwitch.changed() && powerSwitch.read() == LOW )
+    {
+      Serial.println("Power off request: Saving state...");
+      EEPROM.put(0, pulsesAbs);
+      EEPROM.put(4, pulsesRel);
+    }
 
     if( hasEvent || displayUpdateTimer.check() )
       UpdateDisplay();

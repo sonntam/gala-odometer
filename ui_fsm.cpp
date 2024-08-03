@@ -57,12 +57,85 @@ namespace ui_fsm {
           }
   
           DURING {
+            enum Controller::command cmd;
+
             AFTER_MS(3000) {
               nextState = MAIN_MENU;
             }
+
+            cmd = Controller::loop_bootscreen();
+            if( cmd == Controller::GOTO_SETUP ) {
+              nextState = SETUP_SCREEN;
+            }
           }
           break;
-  
+
+        case SETUP_SCREEN:
+
+          ON_ENTRY {
+            Controller::setup_setupscreen();
+          }
+
+          DURING {
+            nextState = SET_PULSES_PER_ROUND;
+          }
+
+          break;
+
+        case SET_PULSES_PER_ROUND:
+
+          ON_ENTRY {
+            Controller::setup_setupPulsesPerRound();
+          }
+
+          DURING {
+            
+            enum Controller::command cmd;
+
+            cmd = Controller::loop_setupPulsesPerRound();
+            switch( cmd ) {
+              case  Controller::LEAVE_SETUP:
+                nextState = MAIN_MENU;
+                break;
+              case Controller::ACTIVATE_CIRCUMFERENCE:
+                nextState = SET_WHEEL_CIRCUMFERENCE;
+                break;
+            }
+          }
+
+          ON_EXIT {
+            Controller::exit_setupscreen();
+          }
+
+          break;
+        
+        case SET_WHEEL_CIRCUMFERENCE:
+
+          ON_ENTRY {
+            Controller::setup_setupCircumference();
+          }
+
+          DURING {
+            
+            enum Controller::command cmd;
+
+            cmd = Controller::loop_setupCircumference();
+            switch( cmd ) {
+              case  Controller::LEAVE_SETUP:
+                nextState = MAIN_MENU;
+                break;
+              case Controller::ACTIVATE_PULSESPERROUND:
+                nextState = SET_PULSES_PER_ROUND;
+                break;
+            }
+          }
+
+          ON_EXIT {
+            Controller::exit_setupscreen();
+          }
+
+          break;
+
         case MAIN_MENU:
           ON_ENTRY {
             Controller::setup_mainmenu();
