@@ -66,6 +66,7 @@ namespace Controller {
     uint16_t u16setting;
     uint32_t u32setting;
 
+    Serial.println("Controller::setup_bootscreen(): Getting settings from EEPROM...");
     EEPROM.get(8, u16setting);
     if( u16setting != 0xFFFF ) PULSES_PER_ROUND = u16setting;
 
@@ -207,7 +208,7 @@ namespace Controller {
     speedCalcTimer.start();  
   }
   
-  void loop_mainmenu() {
+  enum command loop_mainmenu() {
 
     bool hasEvent = false;
     
@@ -218,19 +219,43 @@ namespace Controller {
 
     if( powerSwitch.changed() && powerSwitch.read() == LOW )
     {
-      Serial.println("Power off request: Saving state...");
-      EEPROM.put(0, pulsesAbs);
-      EEPROM.put(4, pulsesRel);
+      return POWER_OFF;
     }
 
     if( hasEvent || displayUpdateTimer.check() )
       UpdateDisplay();
 
-    // TODO Take this from interrupts
-    pulsesAbs++;
-    pulsesRel++;
+    return NONE;
+  }
+
+  
+  void setup_poweroff_menu() {
+
+    uint32_t temp1, temp2;
+
+    noInterrupts();
+    temp1 = pulsesAbs; temp2 = pulsesRel;
+    EEPROM.put(0, pulsesAbs);
+    EEPROM.put(4, pulsesRel);
+    interrupts();
+    Serial.println("Power off request: Saving state...");
+    
+    lcd.clear();
+    lcd.setCursor(2,0);
+    lcd.print("POWERING OFF...");
+    lcd.setCursor(0,1);
+    lcd.print("ABS"); lcd.setCursor(19-3,1); lcd.print("REL");
+    lcd.setCursor(0,2); lcd.print(temp1); lcd.setCursor(20-numberLength(temp2),2); lcd.print(temp2); 
   }
   
+  enum command loop_poweroff_menu() {
+    if( powerSwitch.changed() && powerSwitch.read() == HIGH )
+    {
+      return RESET;
+    }
+
+    return NONE;
+  }
 
   static bool HandleEnc1() {
     bool hasEvent = false;   

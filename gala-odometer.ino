@@ -3,7 +3,6 @@
 
 void setup() {
   // put your setup code here, to run once:
-  
   Serial.begin(9600);
   Peripherals::setup();
   ui_fsm::setup();

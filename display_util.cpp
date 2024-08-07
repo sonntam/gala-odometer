@@ -15,7 +15,6 @@ void displayFloat(LiquidCrystal &lcd, float distance, int roundToDigits, int col
       digitsMultiplier *= 10.0f;
     }
 
-    // Round to the nearest meter (3 decimal places)
     float roundedDistance = static_cast<uint32_t>(distance * digitsMultiplier + 0.5) / digitsMultiplier;
 
     // Update the screen only if the distance has changed
@@ -45,6 +44,15 @@ void displayFloat(LiquidCrystal &lcd, float distance, int roundToDigits, int col
         lastWrittenCharCount = writtenChars;
         lastDispVal = roundedDistance; // Update last displayed distance
     }
+}
+
+size_t numberLength(uint32_t number) {
+    char str[20]; // Allocate a buffer for the string representation
+
+    // Calculate the length (including the null terminator)
+    int length = sprintf(str, "%u", number);
+
+    return length;
 }
 
 void reverseString(char* str) {

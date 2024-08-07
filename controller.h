@@ -9,7 +9,9 @@ namespace Controller {
       GOTO_SETUP,
       LEAVE_SETUP,
       ACTIVATE_CIRCUMFERENCE,
-      ACTIVATE_PULSESPERROUND
+      ACTIVATE_PULSESPERROUND,
+      POWER_OFF,
+      RESET
     };
 
     void setup_bootscreen();
@@ -25,7 +27,10 @@ namespace Controller {
     enum command loop_setupCircumference();
 
     void setup_mainmenu();
-    void loop_mainmenu();
+    enum command loop_mainmenu();
+
+    void setup_poweroff_menu();
+    enum command loop_poweroff_menu();
 
     float pulseToMillimeters(uint32_t pulseCount);
     float pulseToMeters(uint32_t pulseCount);

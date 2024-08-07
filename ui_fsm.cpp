@@ -142,8 +142,35 @@ namespace ui_fsm {
           }
   
           DURING {
-  
-            Controller::loop_mainmenu();
+            enum Controller::command cmd;
+            
+            cmd = Controller::loop_mainmenu();
+
+            switch( cmd ) {
+              case Controller::POWER_OFF:
+                nextState = SHUTDOWN_SAVE;
+                break;
+            }
+            
+          }
+          break;
+
+        case SHUTDOWN_SAVE:
+          ON_ENTRY {
+            Controller::setup_poweroff_menu();
+          }
+
+          DURING {
+            enum Controller::command cmd;
+            
+            cmd = Controller::loop_poweroff_menu();
+
+            switch( cmd ) {
+              case Controller::RESET:
+                nextState = BOOT_SCREEN;
+                break;
+            }
+            
           }
           break;
       }    
